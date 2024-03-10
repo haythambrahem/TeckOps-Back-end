@@ -1,13 +1,14 @@
 package tn.esprit.se.pispring.Service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import tn.esprit.se.pispring.DTO.Request.CurrentUserRequest;
-import tn.esprit.se.pispring.DTO.Request.EditPasswordRequest;
-import tn.esprit.se.pispring.DTO.Request.SearchRequest;
-import tn.esprit.se.pispring.DTO.Request.UserSignupRequest;
+import tn.esprit.se.pispring.DTO.Request.*;
 import tn.esprit.se.pispring.DTO.Response.CurrentUserResponse;
+import tn.esprit.se.pispring.DTO.Response.PageResponse;
 import tn.esprit.se.pispring.DTO.Response.UserResponse;
 import tn.esprit.se.pispring.Repository.RoleRepo;
 import tn.esprit.se.pispring.Repository.UserRepository;
@@ -17,9 +18,9 @@ import tn.esprit.se.pispring.entities.Role;
 import tn.esprit.se.pispring.entities.User;
 import tn.esprit.se.pispring.secConfig.JwtUtils;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 
@@ -140,5 +141,44 @@ public class UserImp implements UserService {
         }catch (Exception e) {
             throw new Exception(e);
         }
+    }
+
+    @Override
+    public PageResponse<UserResponse> findAll(Long page, Long size, String criteria, String direction, String searchTerm) {
+
+        Sort sort = Sort.by(Objects.equals(direction, "asc") ? Sort.Direction.ASC : Sort.Direction.DESC,criteria);
+
+        PageRequest pageRequest = PageRequest.of(Math.toIntExact(page), Math.toIntExact(size), sort);
+        Page<User> result;
+        if (searchTerm != null && !searchTerm.isEmpty()) {
+            result = userRepository.findAll(pageRequest);
+        }else {
+            result = userRepository.searchBy(pageRequest, searchTerm);
+        }
+
+
+        PageResponse<UserResponse> response = new PageResponse<>();
+        response.setContent(result.getContent().stream().map(user -> new UserResponse(user.getId(), user.getFirstName(), user.getLastName(), user.getEmail(), user.getTelephone())).toList());
+        response.setPageNumber(result.getNumber());
+        response.setTotalElements(result.getTotalElements());
+        response.setTotalPages(response.getTotalPages());
+
+        return response;
+    }
+
+    @Override
+    public UserResponse addUser(AddUserRequest request) {
+
+
+        User user = new User();
+        user.setEmail(request.getEmail());
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setTelephone(request.getPhoneNumber());
+        user.setPassword(passwordEncoder.encode("123456789"));
+
+        User saved = userRepository.save(user);
+
+        return new UserResponse(saved.getId(), saved.getFirstName(), saved.getLastName(), saved.getEmail(), saved.getTelephone());
     }
 }

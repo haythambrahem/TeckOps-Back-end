@@ -1,6 +1,9 @@
 package tn.esprit.se.pispring.Repository;
 
 import javax.transaction.Transactional;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -25,4 +28,7 @@ public interface UserRepository extends JpaRepository<User,Long> {
 
     @Query("select u from User u where (u.firstName like concat(:keyword, '%') or u.lastName like concat(:keyword, '%') or u.email like concat(:keyword, '%')) and u.portfolio = :portfolios and u.deleted = false")
     List<User> searchUsers(String keyword, Portfolio portfolios);
+
+    @Query("select u from User u where ( u.firstName like concat(:searchTerm, '%') or u.lastName like concat(:searchTerm, '%') or u.email like concat(:searchTerm, '%') or u.telephone like concat(:searchTerm, '%'))")
+    Page<User> searchBy(PageRequest pageRequest, String searchTerm);
 }
